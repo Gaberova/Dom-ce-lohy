@@ -1,0 +1,55 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+# Domáca úloha - funkcie
+## Vypracovala: Terézia Mária Gaberová
+
+
+## Vypracovanie 1:
+
+```{r}
+combin <- function(n,k) 
+{if(n >= k)     
+return(factorial(n)/(factorial(n-k)*factorial(k)))
+return(NaN)}
+   
+   combin(4,2)
+   combin(1,6)
+   combin(8,5)
+```
+
+## Vypracovanie 2:
+```{r}
+sqrt <- function(x){
+a <- 8
+tol <- 1e-10
+repeat {
+  a <- 0.5 * (x / a + a)
+  if (abs(a * a - x) < tol) break}
+return(a)}
+sqrt(16)
+sqrt(64)
+sqrt(180)
+```
+
+## Vypracovanie 3:
+```{r}
+integ <- function(f,a,b)
+{f <- function(x) {1/(x^2)}
+return(integrate(f,lower=a, upper=b))}
+
+integ(,2,6)
+```
+
+## Vypracovanie 4:
+```{r}
+library(stringi)
+clear.dia <- function(s)
+{stri_trans_general(s, "Latin-ASCII")}
+clear.dia("vŕtačka")
+clear.dia("guľôčka")
+```
+
+
