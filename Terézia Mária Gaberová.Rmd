@@ -1,0 +1,143 @@
+---
+title: "Analýza efektu vitamínu C na rast dĺžky zubov morčiat"
+author: "Terézia Mária Gaberová"
+date: "30.12.2021"
+output:
+  pdf_document: default
+  html_document: default
+subtitle: Skúška 2021/2022
+---
+
+Na analýzu som si vybrala údaje ToothGrowth z balíčku R datasets. 
+```{r}
+library(ggplot2)
+library(ggpubr)
+data("ToothGrowth")
+```
+
+
+### Prieskum údajov
+```{r}
+str(ToothGrowth)
+```
+Dáta pozostávajú zo 60 pozorovaní dĺžky rastu zubov morčiat (len), ktoré sú vyjadrené numerickými hodnotami. Ďalšou premennou je typ doplnku (supp), ktorým bol podávaný vitamín C morčatám: VC je kyselina askorbová a OJ je pomarančový džús. Treťou premennou je dávka (dos), ktorá bola podávaná v 3 veľkostiach: 0,5 mg/deň, 1 mg/deň, 2 mg/deň.
+
+```{r}
+ToothGrowth$dose <- as.factor(ToothGrowth$dose)
+summary(ToothGrowth$len)
+summary(ToothGrowth$dos) 
+summary(ToothGrowth$supp)
+```
+Základnym zhrnutím dát pomocou funkcie summary môžeme vidieť:
+1. Predĺženie zubov sa pohybuje medzi hodnotami 4.2 a 33.9, Median a Mean sa nachádzajú relatívne blízko seba preto môžeme predpokladať Normálne rozdelenie dát.
+2. Premenné dávkovania a suplementu sú identicky rozdelené
+3. Predpokladáme, že premenné sú od seba nezávislé
+
+
+### Normálne rozdelenie dát 
+
+Pre overenie normálneho rozdelenia údajov o dĺžke zubov som si spravila Korelačnú krivku medzi pozorovanými údajmi a normálnym rozdelením pomocou funkcie ggqqplot a následne graf hustoty pre dĺžku zubov pomocou funkcie ggdensity. Použila som balíček ggpubr. Podľa výstupu sa dáta javia normálne rozdelené. Na potvrdenie tejto hypotézy som nakoniec urobila Shapiro-Wilkov test. Ako nulovú hypotézu predpokladám, že dáta sú normálne rozdelené. P-hodnota = 0.1091 (>0,05) takže nulovú hypotézu nezamietame a potvrdzujeme, že dáta sú normálne rozdelené
+```{r}
+ggqqplot(ToothGrowth$len, main = 'QQ graf korelácie medzi dátami dĺžky zubov a normálnym rozdelením', xlab = 'Teoretické kvantily', ylab = 'Dĺžka zubov')+
+theme_bw()
+
+ggdensity(ToothGrowth$len, main = 'Graf hustoty pre dĺžku zubov', xlab = 'Dĺžka zubov', ylab = 'Hustota')+
+theme_bw()
+
+shapiro.test(ToothGrowth$len)
+```
+
+### Porovnanie suplementov
+Ako prvé som si vykreslila krabicové grafy pre dĺžku zubov závislú od použitého suplementu. Ako môžeme vidieť na krabicových grafoch medián OJ je bližšie k výšším hodnotám dĺžky zubov ako VC. 
+```{r}
+ggplot(ToothGrowth, aes(x = supp,y = len))+ 
+geom_boxplot(aes(fill = supp))+
+ggtitle('Krabicový graf: Dĺžka zubov závislá od použitého suplemetu')+ 
+xlab('Suplement')+
+ylab('Dĺžka zubov')+
+labs(fill = 'Suplement' )+
+theme_bw()
+```
+Nulová hypotéza je taká, že pri použití suplementu OJ a VC nie je žiadny rozdiel v raste zubov. Ako alternatívnu hypotézu, predpokladáme, že pri použití suplementu OJ rastu zuby viac ako pri VC. Použijeme nepárový t-test. 
+P-hodnota tohto testu vyšla 0,06063 (> 0,05) a teda nezamietame nulovú hypotézu. Na 95% úrovni spoľahlivosti môžeme tvrdiť, že skutočný rozdiel strednej dĺžky zubov pre dva suplementy sa významne nelíši.
+```{r}
+OJ = ToothGrowth$len[ToothGrowth$supp == 'OJ']
+VC = ToothGrowth$len[ToothGrowth$supp == 'VC']
+
+Ttest_OJ_vs_VC <- t.test(OJ, VC, paired = F, conf.level = 0.95)
+
+Ttest_OJ_vs_VC
+```
+
+### Porovnanie suplementov a dávok
+Vykreslením krabicových grafov dĺžky zubov závislej od dávk y a suplementu môžeme jasne vidieť, že so stúpajúcou dávkou významne stúpa aj dĺžka zubov (krabice sú od seba zreteľne odseparované). V prípade suplementu OJ testujeme vplyv dávok 1 a 2 mg/deň. P-hodnota v tomto prípade vyšla 0,0392 takže môžeme tvrdiť že stúpajúca dávka má vo všetekých prípadoch významne pozitívny vplyv na rast zubov.
+```{r}
+ToothGrowth$dose <- as.factor(ToothGrowth$dose)
+ggplot(ToothGrowth, aes(x = dose,y = len))+ 
+geom_boxplot(aes(fill = dose))+
+ggtitle('Krabicový graf: Dĺžka zubov závislá od dávky a suplemetu')+
+xlab('Dávka (mg/deň)')+
+ylab('Dĺžka zubov')+
+labs(fill = 'Dávka (mg/deň)')+
+facet_wrap(~ supp)+
+theme_bw()
+```
+
+```{r}
+OJ_1.0 <- ToothGrowth$len[ToothGrowth$supp == 'OJ' & ToothGrowth$dose == 1]
+OJ_2.0 <- ToothGrowth$len[ToothGrowth$supp == 'OJ' & ToothGrowth$dose == 2]
+
+Ttest_OJ_1.0_vs_2.0 <- t.test(OJ_1.0, OJ_2.0, paired = F, conf.level = 0.95)
+
+Ttest_OJ_1.0_vs_2.0
+```
+
+Teraz testujeme vplyv suplementu OJ a VC pri nízkej dávke 0.5 mg/deň. Ako nulovú hypotézu prepokladáme, že pri použití OJ a VC nie je rozdiel. P-hodnota = 0.006359 takže nulovú hypotézu zamietame. Z krabicových grafov môžeme vidieť, že s 95% spoľahlivosťou pri použití OJ v nízkej dávke dĺžka zubov významne narastá. 
+
+```{r}
+dose_0.5 <- ToothGrowth[ToothGrowth$dose == 0.5, ]
+
+Ttest_OJ_vs_VC_0.5 <- t.test(len ~ supp, paired = F, data = dose_0.5, conf.level = 0.95)
+
+Ttest_OJ_vs_VC_0.5
+```
+
+Rovnako ako v predošlom prípade testujeme vplyv suplementov OJ a VC v dávke 1 mg/deň. Z t-testu a krabicových grafov môžeme tvrdiť, že s 95% spoľahlivosťou pri použití OJ v strednej dávke je dĺžka zubov významne väčšia. 
+```{r}
+dose_1.0 <- ToothGrowth[ToothGrowth$dose==1.0, ]
+
+Ttest_OJ_vs_VC_1.0 <- t.test(len ~ supp, paired = F, data = dose_1.0, conf.level = 0.95)
+
+Ttest_OJ_vs_VC_1.0
+```
+
+Testovaním vplyvu OJ a VC pri použití dávky 2 mg/deň môžeme tvrdiť, že s 95% spoľahlivosťou pri podaní vysokej dávky nie je rozdiel v použití suplementov.
+```{r}
+dose_2.0 <- ToothGrowth[ToothGrowth$dose==2.0, ]
+
+Ttest_OJ_vs_VC_2.0 <- t.test(len ~ supp, paired = F, data = dose_2.0, conf.level = 0.95)
+
+Ttest_OJ_vs_VC_2.0
+```
+
+
+### Zhrnutie
+Na záver som vytvorila zhrňujúcu tabuľku s p-hodnotami nepárových t-testov. 
+```{r}
+OJ_vs_VC <- c(Ttest_OJ_vs_VC$p.value)
+OJ_vs_VC_0.5 <- c(Ttest_OJ_vs_VC_0.5$p.value)
+OJ_vs_VC_1.0 <- c(Ttest_OJ_vs_VC_1.0$p.value)
+OJ_vs_VC_2.0 <- c(Ttest_OJ_vs_VC_2.0$p.value)
+OJ_1.0_vs_2.0 <- c(Ttest_OJ_1.0_vs_2.0$p.value)
+Tabulka <- data.frame(OJ_vs_VC, OJ_vs_VC_0.5, OJ_vs_VC_1.0, OJ_vs_VC_2.0, OJ_1.0_vs_2.0, row.names = c("p-hodnota"))
+print(Tabulka)
+```
+
+
+### Záver
+V tejto analýze som vykreslila potrebné krabicové grafy, graf QQ korelácie a graf hustoty dát. Na štatistickú analýzu som použila nepárový t-test pričom som skúmala vplyv rôznych dávok vitamínu C (0.5, 1.0, 2.0 mg/deň) a dvoch rôznych suplementov (kyseliny askorbovej a pomarančového džúsu) na dĺžku zubov morčiat. Predpokladala som, že populácie sú nezávislé, premenné dávkovania asuplementu sú identicky rozdelené a údaje dĺžky zubov sú normálne rozdelené. 
+Z analýzy vyplýva:
+- množstvo dávky má významný vplyv na dĺžku zubov
+- vo všeobecnosti použitý suplement nemá vplyv na dĺžku zubov avšak v kombinácii s rôznymi dávkami má vplyv
+- pri dávkach 0.5 a 1.0 mg/deň je dĺžka zubov významne vyššia pri podaní pomarančového džúsu
+- pri dávke 2.0 mg/deň som nepotvrdila rozdiel v podaní kyseliny askorbovej a pomarančového džúsu
